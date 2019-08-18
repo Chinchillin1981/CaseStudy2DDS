@@ -6,6 +6,15 @@ output: html_document
 keep_md: true
 ---
 
+#Executive Summary
+
+#### The anaylysis below is a workforce analysis of Frito Lay performed by DDS Analytics. This analysis covers the following general workforce overview. An analysis of attrition and key job roles at risk for worker attrition. An analysis of classification predicive models to predict attrition as well as an analysis of linear models to predict Monthly income. 
+
+#### Presentation Link
+https://youtu.be/liTsbSf0qRc
+
+#### Github Repository
+https://github.com/Chinchillin1981/CaseStudy2DDS
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -26,6 +35,7 @@ library(doParallel)
 library(parallel)
 library(corrplot)
 library(purrr)
+library(plotly)
 ```
 
 #### Import Sample data
@@ -33,8 +43,59 @@ library(purrr)
 CSData <- read.csv("CaseStudy2-data.csv", header = TRUE)
 ```
 
+## ** Workforce Analysis**
 
-## **Analysis** job roles and turnover
+```{r}
+# Average Age
+mean(CSData$Age)
+
+# Average years at company
+mean(CSData$YearsAtCompany)
+
+# average Job satisfaction
+mean(CSData$JobSatisfaction)
+
+# Average years with manager
+mean(CSData$YearsWithCurrManager)
+
+# Average years between promotion
+mean(CSData$YearsSinceLastPromotion)
+
+#Distance from home
+mean(CSData$DistanceFromHome)
+
+#Environment Satisfaction
+mean(CSData$EnvironmentSatisfaction)
+
+
+#Relationship satisfaction
+mean(CSData$RelationshipSatisfaction)
+
+
+#Performance Rating
+mean(CSData$PerformanceRating)
+
+
+#Total Working Years
+mean(CSData$TotalWorkingYears)
+
+
+# Pie chart of percentage of male and female employees almost 60% of workforce is male
+library(plotly)
+plot_ly(data = CSData, labels = CSData$Gender, values = plyr::count(CSData$Gender), type = "pie", title = "Gender")
+
+
+
+# Pie Chart of rob roles and percentage of workforce
+library(plotly)
+plot_ly(data = CSData, labels = CSData$JobRole, values = plyr::count(CSData$JobRole), type = "pie", title = "Job Roles")
+
+# Over view of Eduction
+mean(CSData$Education)
+plot_ly(data = CSData, labels = CSData$EducationField, values = plyr::count(CSData$EducationField), type = "pie", title = "Education Field")
+
+```
+## **Analysis job roles and turnover**
 ```{r}
 #Get Percentage of Roles and turnover
 RoleTotal <- plyr::count(CSData$JobRole)
@@ -125,7 +186,7 @@ plot(HR$Attrition, HR$YearsAtCompany, xlab = "Attrition", ylab = "Years At Compa
 #Lab Techs that quit had a much lower Environment Satisfaction than the averge of 3
 plot(LabTech$Attrition, LabTech$EnvironmentSatisfaction, xlab = "Attrition", ylab = "Environment Satisfaction", main = "Lab Tech Attrition and Environment Satisfaction")
 
-#Lab
+#Lab Tech attrition and Age
 plot(LabTech$Attrition, LabTech$Age, xlab = "Attrition", ylab = "Age", main = "Lab Tech Attrition and Age")
 
 #Lab tech and distance from home
@@ -289,4 +350,6 @@ fit.knnreg
 ```
 ## Regression Model fit Conclucsion
 #### The simple linear model had a lower RMSE than the knn model and a much higher Rsquared. The linear regression model is a better fit than the knn
+
+
 
