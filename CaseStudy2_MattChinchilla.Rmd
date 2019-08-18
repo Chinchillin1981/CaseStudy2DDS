@@ -1,0 +1,292 @@
+---
+title: "CaseStudy2"
+author: "Matt Chinchilla"
+date: "8/11/2019"
+output: html_document
+keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Libraries
+```{r message=FALSE}
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(formattable)
+library(caret)
+library(knitr)
+library(kableExtra)
+library(plotly)
+library(corrplot)
+library(ggthemes)
+library(doParallel)
+library(parallel)
+library(corrplot)
+library(purrr)
+```
+
+#### Import Sample data
+```{r}
+CSData <- read.csv("CaseStudy2-data.csv", header = TRUE)
+```
+
+
+## **Analysis** job roles and turnover
+```{r}
+#Get Percentage of Roles and turnover
+RoleTotal <- plyr::count(CSData$JobRole)
+#Format columns
+names(RoleTotal)[1] <- "JobRole"
+names(RoleTotal)[2] <- "Total"
+RoleTotal$JobRole <- as.character(RoleTotal$JobRole)
+#Only employees with attrition
+AttrY <- dplyr::filter(CSData, CSData$Attrition == "Yes")
+#Count of number of employees in role who quit
+AttrRole <-  plyr::count(AttrY$JobRole)
+#Format Columns Attr Role
+names(AttrRole)[1] <- "JobRole"
+names(AttrRole)[2] <- "Attr"
+AttrRole$JobRole <- as.character(AttrRole$JobRole)
+#Merge RoleTotal with AttrRole
+Role_Attr_Total <- merge(RoleTotal,AttrRole)
+# Add a column that is the calculated percentage of Job Role turnover 
+Role_Attr_Total <- mutate(Role_Attr_Total, Attr_Percent = Attr / Total)
+#Format the Attr_Percent column to Percentage
+Role_Attr_Total$Attr_Percent <- percent(Role_Attr_Total$Attr_Percent)
+#Arrange the data in Descending Order by Attribution Percentage
+Role_Attr_Total <- Role_Attr_Total %>% arrange(desc(Attr_Percent))
+
+kable(Role_Attr_Total) %>% kable_styling() %>% column_spec(4, bold = TRUE)
+```
+
+```{r}
+#Plot of Attrition in each Job role
+p <- ggplot(data = CSData, aes(JobRole, fill = (Attrition == "Yes")))
+p + geom_bar() + coord_flip() + labs(title = "Attrition in each Job Role", x = "Job Role", y = "Number of Employees") + 
+  scale_fill_hc(name = "Attrition", labels = c("Total Employees", "Attrition") ) + theme_linedraw()
+```
+
+## Drill down into top three highest job roles with attrition
+
+#### **Sales Representative** Attrition analysis
+```{r}
+# Sales Rep Attrition
+  SalesReps <- filter(CSData, JobRole == "Sales Representative")
+  AttrYSales <- filter(AttrY, JobRole == "Sales Representative")
+
+# Average years at the company. Sales Reps that leave on average are at the company less than 2.5 years.
+mean(SalesReps$YearsAtCompany)
+mean(AttrYSales$YearsAtCompany)
+
+# Most sales reps that stay with the company are 30 and over
+plot(SalesReps$Attrition, SalesReps$Age, xlab = "Attrition", ylab = "Age", main = "Sales Rep Attrition and Age")
+
+# Job Satisfaction Ratings for Sales Reps with Attrition is never above a 3.0 and averages 2.5
+plot(SalesReps$Attrition, SalesReps$JobSatisfaction, xlab = "Attrition", ylab = "Job Satisfaction", main = "Sales Rep Attrition and Job Satisfaction")
+
+# Turnover and Distance from home in general sales reps that leave the company live farther away then the 5mile average that sales reps who stay live
+plot(SalesReps$Attrition, SalesReps$DistanceFromHome, xlab = "Attrition", ylab = "Distance from home", main = "Sales Rep Attrition and Distance from Home")
+
+#The reps that leave are disproportionatly Single
+plot(SalesReps$Attrition, SalesReps$MaritalStatus, xlab = "Attrition", ylab = "Marriage Status", main = "Sales Rep Attrition and Marital Status")
+
+```
+
+#### **Human Resources** Attrition analysis
+```{r}
+#Filter on Human Resources
+  HR <- filter(CSData, JobRole == "Human Resources")
+
+# HR Rep turnover average age is less thatn 30
+plot(HR$Attrition, HR$Age, xlab = "Attrition", ylab = "Age", main = "Human Resources Attrition and Age")
+
+# HR Reps that left company lived much farther from work on average 20 miles away
+plot(HR$Attrition, HR$DistanceFromHome, xlab = "Attrition", ylab = "Distance From Home", main = "Human Resources Attrition and Distance from home")
+
+#Job Satisfaction of those that left averaged 2
+plot(HR$Attrition, HR$JobSatisfaction, xlab = "Attrition", ylab = "Job Satisfaction", main = "Human Resources Attrition and Job Satisfaction")
+
+# Total working years of those that stayed averaged 7 years those that quite averaged 2
+plot(HR$Attrition, HR$TotalWorkingYears, xlab = "attrition", ylab = "Job Satisfaction", main = "Human Resources Atrition and Total Working Years")
+
+# Those that stay have been with the company an average of five years those that leave Less than two
+plot(HR$Attrition, HR$YearsAtCompany, xlab = "Attrition", ylab = "Years At Company", main = "Human Rsources Attrition and Years at the Company")
+
+```
+
+#### **Laboratory Technician** Attrition analysis
+```{r}
+ # Lab Techs
+  LabTech <- filter(CSData, CSData$JobRole == "Laboratory Technician")
+
+#Lab Techs that quit had a much lower Environment Satisfaction than the averge of 3
+plot(LabTech$Attrition, LabTech$EnvironmentSatisfaction, xlab = "Attrition", ylab = "Environment Satisfaction", main = "Lab Tech Attrition and Environment Satisfaction")
+
+#Lab
+plot(LabTech$Attrition, LabTech$Age, xlab = "Attrition", ylab = "Age", main = "Lab Tech Attrition and Age")
+
+#Lab tech and distance from home
+plot(LabTech$Attrition, LabTech$DistanceFromHome, xlab = "Attrition", ylab = "Distance From Home", main = "Lab Tech Attrition and Distance from home")
+
+#Lab tech and total working years
+plot(LabTech$Attrition, LabTech$TotalWorkingYears, xlab = "Attrition", ylab = "Total Working Years", main = "Lab Tech Attrition and Total working years")
+
+# Single lab techs are significantly more likely to leave
+plot(LabTech$Attrition, LabTech$MaritalStatus, xlab = "Attrition",ylab = "Marital Status",main = "Lab Tech Attrition and Marital Status" )
+
+```
+
+## Predictive model to identify employees that are likely to leave the company
+
+#### Find coorolation to Attrition
+```{r}
+#Look at the proportion of each variable that influences attrition
+
+#Step 1 remove data that is not going to be useful for finding attrition ID, Employee Number, Standard Hours, and Over18
+CSData_AttrUseful <- CSData %>% select(- c(ID,EmployeeNumber, StandardHours, Over18, EmployeeCount))
+
+#Create a function that will create a plot for each variable
+AttrPlot <- function(df, x, y){
+  ggplot(data = df, aes_string(x = x, fill = y)) +
+    geom_bar(alpha = .9, position = "fill") +
+    coord_flip() + labs(x = x, y = "Attrition") + theme_hc()+ scale_fill_hc()
+}
+
+yname <- "Attrition"
+xname <- names(CSData_AttrUseful[-ncol(CSData_AttrUseful)])
+
+lapply(xname, function(x) AttrPlot(df = CSData_AttrUseful, x = x, y = yname))
+```
+
+#### Test Classifier models naive bayes and knn for best fit
+
+```{r}
+#Remove columns that are not useful
+CSData_AttrUseful <- CSData %>% select(- c(ID,EmployeeNumber, StandardHours, Over18, EmployeeCount))
+
+#Create training and test data
+set.seed(8)
+TrainObs <- createDataPartition(y = CSData_AttrUseful$Attrition, p = .60, list = FALSE)
+#Create the training observations for Attrition
+AttrTrain <- CSData_AttrUseful[TrainObs,]
+
+#Create the test Observations for Attrition
+AttrTest <- CSData_AttrUseful[-TrainObs,]
+```
+
+```{r}
+#Set the training control method
+trainMethod <- trainControl(method = "repeatedcv", number =  25, repeats = 5, summaryFunction = twoClassSummary, classProbs = TRUE)
+
+#Check number of cores for parallel processing
+parallel::detectCores() #4 cores detected on iMac used for study
+
+#Assign cores to run this training model
+workers <- makeCluster(3L)
+
+#Sets up workers to run training
+registerDoParallel(workers)
+```
+
+#### Naive Bayes method
+```{r warning=FALSE}
+#Fit the Naives Bayes model
+fit.nb <- train(Attrition ~., data = AttrTrain, method = "nb", metric = "Spec", trControl = trainMethod, preProcess = c("center","scale"), tuneLength = 31)
+
+```
+
+#### Predict,Summary, and assessment of Naive Bayes model
+```{r warning= FALSE}
+#Predictions based on Naives Bayes method
+pred.nb <- predict(fit.nb, AttrTest)
+
+#Summary of Naives Bayes predicions
+summary(pred.nb)
+
+#Confusion Matrix to assess model
+confusionMatrix(pred.nb, AttrTest$Attrition)
+```
+
+#### KNN method
+```{r warning= FALSE}
+fit.knn <- train(Attrition ~., data = AttrTrain, method = "knn", metric = "Spec", trControl = trainMethod, preProcess = c("center","scale"), tuneLength = 31)
+
+```
+
+#### Predict,Summary, and assessment of KNN model
+```{r warning= FALSE}
+#Predictions based on Naives Bayes method
+pred.knn <- predict(fit.knn, AttrTest)
+
+#Summary of Naives Bayes predicions
+summary(pred.knn)
+
+#Confusion Matrix to assess model
+confusionMatrix(pred.knn, AttrTest$Attrition)
+```
+
+## Classification Model fit conclusion
+#### Based on the output of both models the KNN model has high Accuracy and Sensitivity but it's specificity is only 18%. The Naive Bayes models meets all the criteria required for Accuracy, Sensitiy, and Specificity all being over 60%.
+
+
+## Predicting Monthly Income
+
+#### The most significant variables that corelate to Monthly income are Job Level (95%) and Total Working years (78%)
+```{R}
+#function to create corrolation heatmap
+correlator <- function(df){
+  df %>%
+    keep(is.numeric) %>%
+    tidyr::drop_na() %>%
+    cor %>%
+    corrplot(addCoef.col = "white", number.digits = 2,
+             number.cex = .5, method = "square",
+             order = "hclust",
+             tl.srt = 45, tl.cex = .8)
+}
+
+correlator(CSData_AttrUseful)
+```
+
+#### Comparing Linear regression models to predict Monthly Income using a simple linear model and knn regression
+
+```{r}
+# Create the training and test data for the Monthly Income models
+set.seed(12)
+TrainObs <- createDataPartition(y = CSData_AttrUseful$Attrition, p = .60, list = FALSE)
+
+#Create the training observations for Monthly Income
+MITrain <- CSData_AttrUseful[TrainObs,]
+
+#Create the test Observations for Monthly Income
+MITest <- CSData_AttrUseful[-TrainObs,]
+```
+
+```{r}
+# Set the training method for the regression models
+trainMethod2 <- trainControl(method = "repeatedcv", number =  25, repeats = 5)
+```
+
+#### Fit a simple linear regression model
+```{r}
+# Fit lm model
+fit.lm <- train(MonthlyIncome ~., data = MITrain, method = "lm", trControl = trainMethod2)
+
+# Check RMSE of linear model
+fit.lm
+```
+
+#### Fit a knn regression model
+```{r}
+# Fit knn regression model
+fit.knnreg <- train(MonthlyIncome ~., data = MITrain, method = "knn", trControl = trainMethod2)
+
+# Check RMSE of knn regression model
+fit.knnreg
+```
+## Regression Model fit Conclucsion
+#### The simple linear model had a lower RMSE than the knn model and a much higher Rsquared. The linear regression model is a better fit than the knn
+
